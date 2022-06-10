@@ -1,0 +1,247 @@
+
+    
+   
+
+let C_FLOW = {Template: 'New',
+                Nodes:[
+                 
+{Node:{id:1,nom:10,title:'a',projectStatus:'ForApproval',duration: 2,role: 'Sales Person',cc: 84,Dependency: []}},
+{Node:{id:2,nom:20,title:'b',projectStatus:'ForApproval',duration: 2,role: 'Sales Person',cc: 68,Dependency: []}},
+{Node:{id:3,nom:30,title:'c'ForApproval',duration: 1,role: 'Sales Person',cc: 70,Dependency: []}},
+{Node:{id:4,nom:40,title:'d',projectStatus:'ForApproval',duration: 1,role: 'Sales Person',cc: 139,Dependency: [{id:10}]}},
+
+
+
+                ],
+                Addressee: [
+                  {Department: {id:1,dept:'Sales',Roles:[
+                   {Role: {id : 1, role : 'Sales Person'}}, 
+                   {Role: {id : 2, role : 'Technical Sales'}}                    
+                  ]}},
+                  {Department: {id:2,dept:'Project',Roles:[
+                   {Role: {id : 3, role : 'Project department manager'}},
+                   {Role: {id : 5, role : 'Project runner'}}
+                  ]}}               
+                   
+                ]
+               };
+
+
+var loaded = false;
+var c = 100;
+const DISPLAYX = C_FLOW.Nodes.length*80;
+const DISPLAYY = C_FLOW.Nodes.length*50;
+
+function nextColor() {
+  c -=5;
+  if ( c < 10 ){
+    c = 100;
+  }
+  return ( (c-=5));
+}
+
+function getNode(_flow, _nom ) {
+ 
+  for ( let i in _flow.Nodes ){
+ 
+    if ( _flow.Nodes[i].Node.nom === _nom){
+      return (_flow.Nodes[i].Node);
+    }
+  }
+  return (null);
+}
+
+let dMaxName = undefined;
+  let dMaxDur = -1;
+  
+ 
+function renderNode( _flow, _idx) {
+ 
+  let o = _flow.Nodes[_idx].Node;
+   
+   let y = 50+(_idx * 40);
+    let x = 450;
+    let w = 20 ;
+    let h = 20;
+    let r = 5;
+    let txtSz = 10;
+    let col = nextColor();
+  if (o.Dependency.length === 0) {
+    //console.log(`${o.nom} - ${o.Dependency.length}`)
+    // No Dependencies... So, Can Start Now.
+   
+    push();
+    translate(x,y);
+    stroke(col,100,100);
+    strokeWeight(1);
+    textSize(txtSz/2);
+   
+    
+    for ( let i = 0 ; i < o.duration; i++ ){
+      rect(i*w,0,w,h); 
+      text(`${o.nom}`,(i*w)+(w/2)-(txtSz/4),(h/2)+(txtSz/4));
+    }
+    o.color=col;
+    o.x=x;
+    o.y=y;
+    o.w=(o.duration*w);
+    o.h=h;
+    o.rendered=true;
+    
+    
+    
+   
+    fill(o.color,100,100);
+    
+    textSize(txtSz*1.4);
+    text(`${o.title}`,0-(x)+10,h-txtSz);
+     textSize(txtSz*0.8);
+     text(`Assigned:${o.role}`,0-(x)+10,h);
+    text(`id:${o.nom}, duration ${o.duration} day/s`,0-(x)+10,h+10);
+    strokeWeight(5);
+    point(0,0+(h/2));
+    point(0+o.w,0+(h/2));
+    pop();
+    
+    
+    
+    //console.log(`A:${dMaxDur}<=${o.duration} [${dMaxDur <= o.duration}]`);
+    if (dMaxDur <= o.duration ){
+      dMaxDur = o.duration;
+      dMaxName = o.nom;
+    }
+    //console.log(`B:${dMaxDur}<=${o.duration} [${dMaxDur <= o.duration}]`);
+  } else {
+    
+   // console.log(`[${_idx}] Node:${o.nom} - dependeny count:${o.Dependency.length}]`);
+    
+    
+    let maxD = -1;
+    let maxDName = undefined;
+    
+    for ( let i = 0 ; i < o.Dependency.length ; i++){
+      let dNom = o.Dependency[i].id;
+      if ( dNom !== undefined) {
+        //console.log(`\t Dependency idx:${i} - ${o.Dependency[i].id}`);
+        let dN = getNode(C_FLOW,dNom); 
+        if (dN !== null){
+          if (dN.rendered){
+           // console.log(dN);
+            //console.log(`\t\tdependent node ${dN.nom} x:${dN.x}->${dN.w} found`);
+           
+            //console.log(`A:${dMaxDur}<=${o.duration} [${dMaxDur <= o.duration}]`);
+            if (maxD <= dN.duration ){
+              maxD = dN.duration;
+              maxDName = dN.nom;
+             // console.log(`\t\t\tcurrent max ${maxDName}-${maxD}`);
+            }
+            
+            /*** END DRAW **/
+          }else{
+            console.log(`\t\tdependent node ${dNom} not rendered yet`);
+          }
+        }else{
+          console.error(`\t\tdependent node ${dNom} NOT found`);
+        }
+      }
+      
+      
+      
+    }//end for
+    
+       /*** DRAW ****/
+            let dNMax = getNode(C_FLOW,maxDName);
+          //  console.log(`\t\t\tdraw from parent Node:${dNMax.nom} x:${dNMax.x} y:${dNMax.y}`);
+             push();
+            translate((dNMax.x+dNMax.w),y);
+                       stroke(dNMax.color,100,100);
+            strokeWeight(1);
+            textSize(txtSz/2);
+         
+            for ( let i = 0 ; i < o.duration; i++ ){
+              rect(i*w,0,w,h); 
+              text(`${o.nom}`,(i*w)+(w/2)-(txtSz/4),(h/2)+(txtSz/4));
+            }
+            o.color=dNMax.color;
+            o.x=dNMax.x+(dNMax.w);
+            o.y=y;
+            o.w=(o.duration*w);
+            o.h=h;
+            o.rendered=true;
+       
+           fill(o.color,100,100);
+           textSize(txtSz*1.4);
+           text(`${o.title}`,0-x+10,h-txtSz);
+           textSize(txtSz*0.8);
+           text(`Assigned:${o.role}`,0-(x)+10,h);
+           text(`id:${o.nom}, duration ${o.duration} day/s`,0-(x)+10,h+10);
+
+    
+            strokeWeight(5);
+            point(0,0+(h/2));
+            point(0+o.w,0+(h/2));
+            strokeWeight(1);
+            
+            pop();
+   
+    
+           for ( let i = 0 ; i < o.Dependency.length ; i++){
+              let dNom = o.Dependency[i].id;
+              let dNode = getNode(C_FLOW,dNom);
+              if (dNode !== null)
+                strokeWeight(0.5);
+                stroke(dNode.color,100,100)
+                line(dNode.x+dNode.w,dNode.y+(dNode.h/2),o.x,dNode.y+(dNode.h/2))
+             line(o.x,o.y+(o.h/2),o.x,dNode.y+(dNode.h/2));
+               // line(o.x,o.y+(o.h/2),dNode.x+dNode.w,dNode.y+(dNode.h/2));
+              
+            }
+     
+   
+    
+  }
+   
+}
+
+function getNodeByXY(){
+  
+}
+
+function mouseClicked() {
+  console.log(`mouseX:${mouseX} mouseY:${mouseY}`);
+}
+function renderFlow( _flow ) {
+  
+  for ( let i in _flow.Nodes ){
+    renderNode( _flow, i);
+  }
+}
+
+
+
+function setup(){
+  createCanvas(DISPLAYX, DISPLAYY);
+  degrees();
+  colorMode(HSB, 100);
+ 
+  renderFlow(C_FLOW);
+ //saveCanvas('sample', 'png');
+  loaded = !loaded;
+}
+
+
+function draw() {
+  //background(220);
+  
+  
+}
+
+
+
+
+
+
+
+
+
+
